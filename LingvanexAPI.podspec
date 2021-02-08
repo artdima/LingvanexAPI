@@ -7,6 +7,7 @@ s.homepage     = "https://github.com/artdima/LingvanexAPI"
 s.license      = { :type => "MIT" }
 s.author       = { "Medyannik Dmitriy" => "mail@artdima.ru" }
 s.platform     = :ios, "10.0"
+s.swift_version = '4.2'
 s.source       = { :git => "https://github.com/artdima/LingvanexAPI.git", :tag => s.version.to_s }
 s.source_files = "Classes", "LingvanexAPI/Sources/**/*.{swift}"
 s.requires_arc = true
