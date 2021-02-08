@@ -58,9 +58,9 @@
 		2AC89D5C25D0335E0065E37D /* LingvanexAPI */ = {
 			isa = PBXGroup;
 			children = (
+				F005776025D145C900BD151D /* Sources */,
 				2AC89D5D25D0335E0065E37D /* AppDelegate.swift */,
 				2AC89D5F25D0335E0065E37D /* SceneDelegate.swift */,
-				2AC89D7225D033840065E37D /* LingvanexAPI.swift */,
 				2AC89D6125D0335E0065E37D /* ViewController.swift */,
 				2AC89D6325D0335E0065E37D /* Main.storyboard */,
 				2AC89D6625D033610065E37D /* Assets.xcassets */,
@@ -68,6 +68,14 @@
 				2AC89D6B25D033610065E37D /* Info.plist */,
 			);
 			path = LingvanexAPI;
+			sourceTree = "<group>";
+		};
+		F005776025D145C900BD151D /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				2AC89D7225D033840065E37D /* LingvanexAPI.swift */,
+			);
+			path = Sources;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
