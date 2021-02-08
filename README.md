@@ -1,8 +1,8 @@
 ## LingvanexAPI
 
 [![Version](https://img.shields.io/cocoapods/v/LingvanexAPI.svg?style=flat)](http://cocoadocs.org/artdima/LingvanexAPI)
-[![License](https://img.shields.io/cocoapods/l/LingvanexAPI..svg?style=flat)](http://cocoadocs.org/artdima/LingvanexAPI)
-[![Platform](https://img.shields.io/cocoapods/p/LingvanexAPI..svg?style=flat)](http://cocoadocs.org/artdima/LingvanexAPI)
+[![License](https://img.shields.io/cocoapods/l/LingvanexAPI.svg?style=flat)](http://cocoadocs.org/artdima/LingvanexAPI)
+[![Platform](https://img.shields.io/cocoapods/p/LingvanexAPI.svg?style=flat)](http://cocoadocs.org/artdima/LingvanexAPI)
 
 A framework to use <a href="https://lingvanex.com/documentation-api/">LingvaNex Translation API</a> in Swift.
 
