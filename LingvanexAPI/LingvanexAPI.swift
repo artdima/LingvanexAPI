@@ -28,6 +28,43 @@ public class LingvanexAPI {
         public let targetTransliteration: String
     }
     
+    
+    public struct LanguagesResult: Decodable {
+        let err: String?
+        let result: [Languages]
+    }
+    
+    public struct Languages: Decodable {
+        /// the language code in the format “language code_code of the country”
+        public let fullCode: String
+        /// the language code in the “language code” format
+        public let name: String?
+        /// English name of the language
+        public let englishName: String
+        /// the language name translated using the language specified by the query parameter “code”
+        public let codeName: String
+        /// the relative address of which is the image of the country flag. Example static/flags/afrikaans. The full address for downloading the flag will be https://backenster.com/v2/static/flags/afrikaans.png. In order to download flags in increased resolutions, you should add to this parameter: @2x or @3x (example https://backenster.com/v2/static/flags/afrikaans@2x.png or https://backenster.com/v2/static/flags/afrikaans@3x.png)
+        public let flagPath: String
+        /// a word for testing a speech synthesizer
+        public let testWordForSyntezis: String
+        /// an array of objects, each of which is a description of the function that is supported in the given language
+        public let modes: [Mode]
+        
+        enum CodingKeys: String, CodingKey {
+            case name, englishName, codeName, flagPath, testWordForSyntezis, modes
+            case fullCode = "full_code"
+        }
+    }
+    
+    public struct Mode: Decodable {
+        /// name of the function. Currently, only 4 functions are widely supported: “Speech synthesis“, “Image recognition“, “Translation“, “Speech recognition“
+        public let name: String
+        /// logical value true or false, which shows the status of the function: on or off
+        public let value: Bool
+        /// logical value true or false, which shows the ability to synthesize speech for both sexes. Displayed only for function “Speech synthesis“
+        public let genders: Bool?
+    }
+    
     /// Shared instance.
     public static let shared = LingvanexAPI()
     
@@ -55,33 +92,28 @@ public class LingvanexAPI {
     private let session = URLSession(configuration: .default)
     
     /**
-        Initialization.
-    
-        - Parameters:
-            - apiKey: A valid API key to handle requests for this API. Authentication of requests is done by adding the “Authorization” header with the following data format: Bearer The key can be created on the user control panel page https://lingvanex.com/account.
+    Initialization.
+
+    - Parameters:
+        - apiKey: A valid API key to handle requests for this API. Authentication of requests is done by adding the “Authorization” header with the following data format: Bearer The key can be created on the user control panel page https://lingvanex.com/account.
     */
     public func start(with apiKey: String) {
         self.apiKey = apiKey
     }
     
     /**
-        Translates input text, returning translated text.
-    
-        - Parameters:
-            - from: The language code in the format “language code_code of the country” from which the text is translated. The language code is represented only in lowercase letters, the country code only in uppercase letters (example en_GB, es_ES, ru_RU and etc.). If this parameter is not present, the auto-detect language mode is enabled
-            - to:  Language code in the format “language code_code of the country” to which the text is translated (required)
-            - data: Data for translation (required). Two types of data are supported: a string and an array of strings
-            - platform: api
+    Translates input text, returning translated text.
+
+    - Parameters:
+        - from: The language code in the format “language code_code of the country” from which the text is translated. The language code is represented only in lowercase letters, the country code only in uppercase letters (example en_GB, es_ES, ru_RU and etc.). If this parameter is not present, the auto-detect language mode is enabled
+        - to:  Language code in the format “language code_code of the country” to which the text is translated (required)
+        - data: Data for translation (required). Two types of data are supported: a string and an array of strings
+        - platform: api
     */
     
     @available(iOS 10.0, *)
     public func translate(_ from: String, _ to: String, _ data: String, _ platform: String = "api", _ completion: @escaping ((_ translate: Translate?, _ error: Error?) -> Void)) {
-        guard var urlComponents = URLComponents(string: API.translate.url) else {
-            completion(nil, nil)
-            return
-        }
-                
-        guard let url = urlComponents.url else {
+        guard let url = URLComponents(string: API.translate.url)?.url else {
             completion(nil, nil)
             return
         }
@@ -125,5 +157,56 @@ public class LingvanexAPI {
         task.resume()
     }
     
+    
+    /**
+    Getting the list of languages
+
+    - Parameters:
+        - platform: api
+        - code: the language code in the format “language code_code of the country”, which is used to display the names of the languages. The language code is represented only in lowercase letters, the country code only in uppercase letters (example en_GB, es_ES, ru_RU etc). If this option is not present, then English is used by default
+    */
+    
+    @available(iOS 10.0, *)
+    public func getLanguages(_ code: String?, _ platform: String = "api", _ completion: @escaping ((_ translate: [Languages]?, _ error: Error?) -> Void)) {
+        guard var urlComponents = URLComponents(string: API.getLanguages.url) else {
+            completion(nil, nil)
+            return
+        }
+        
+        var queryItems = [URLQueryItem]()
+        queryItems.append(URLQueryItem(name: "platform", value: platform))
+        if let code = code {
+            queryItems.append(URLQueryItem(name: "code", value: code))
+        }
+        urlComponents.queryItems = queryItems
+                
+        guard let url = urlComponents.url else {
+            completion(nil, nil)
+            return
+        }
+        
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = API.getLanguages.method
+        urlRequest.setValue("Bearer " + apiKey, forHTTPHeaderField: "Authorization")
+        
+        let task = session.dataTask(with: urlRequest) { (data, response, error) in
+            guard let data = data,                                // is there data
+                  let response = response as? HTTPURLResponse,    // is there HTTP response
+                  (200 ..< 300) ~= response.statusCode,           // is statusCode 2XX
+                  error == nil else {                             // was there no error, otherwise ...
+                
+                completion(nil, error)
+                return
+            }
+            
+            guard let loaded = try? JSONDecoder().decode(LanguagesResult.self, from: data) else {
+                completion(nil, error)
+                return
+            }
+            
+            completion(loaded.result, nil)
+        }
+        task.resume()
+    }
     
 }
