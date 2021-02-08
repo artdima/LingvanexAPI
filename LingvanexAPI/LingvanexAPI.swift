@@ -73,21 +73,14 @@ public class LingvanexAPI {
             - data: Data for translation (required). Two types of data are supported: a string and an array of strings
             - platform: api
     */
-
+    
+    @available(iOS 10.0, *)
     public func translate(_ from: String, _ to: String, _ data: String, _ platform: String = "api", _ completion: @escaping ((_ translate: Translate?, _ error: Error?) -> Void)) {
         guard var urlComponents = URLComponents(string: API.translate.url) else {
             completion(nil, nil)
             return
         }
-        
-        var queryItems = [URLQueryItem]()
-        queryItems.append(URLQueryItem(name: "key", value: apiKey))
-        queryItems.append(URLQueryItem(name: "from", value: from))
-        queryItems.append(URLQueryItem(name: "to", value: to))
-        queryItems.append(URLQueryItem(name: "data", value: data))
-        queryItems.append(URLQueryItem(name: "platform", value: platform))
-        urlComponents.queryItems = queryItems
-        
+                
         guard let url = urlComponents.url else {
             completion(nil, nil)
             return
@@ -95,6 +88,22 @@ public class LingvanexAPI {
         
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = API.translate.method
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        urlRequest.setValue("Bearer " + apiKey, forHTTPHeaderField: "Authorization")
+        
+        let parameters: [String: Any] = [
+            "from": from,
+            "to": to,
+            "data": data,
+            "platform": platform
+        ]
+        
+        do {
+            urlRequest.httpBody = try JSONSerialization.data(withJSONObject: parameters, options: .prettyPrinted)
+        } catch let error {
+            completion(nil, error)
+            return
+        }
         
         let task = session.dataTask(with: urlRequest) { (data, response, error) in
             guard let data = data,                                // is there data
