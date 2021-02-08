@@ -27,3 +27,39 @@ And then use the following code:
 ```swift
 LingvanexAPI.shared.start(with: "API_KEY_HERE")
 ```
+
+## Using
+
+The framework supports 2 endpoinds: <i>translate</i> and <i>languages</i>. You can find more information in the official source. How to use from the framework.
+
+Translation:
+```swift
+LingvanexAPI.shared.translate("en_GB", "ru_RU", "Hello") { (translate, error) in
+    if let error = error {
+        print(error.localizedDescription)
+        return
+    }
+    
+    if let t = translate?.result {
+        print(t)
+    }
+}
+```
+
+Languages:
+```swift
+LingvanexAPI.shared.getLanguages(nil) { (results, error) in
+    if let error = error {
+        print(error.localizedDescription)
+        return
+    }
+    
+    results.map{
+        print($0.description)
+    }
+}
+```
+
+## License
+
+<i>LingvanexAPI</i> is available under the MIT license. See the LICENSE file for more info.
