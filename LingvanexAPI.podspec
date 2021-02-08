@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
 s.name         = "LingvanexAPI"
-s.version      = "0.0.1"
+s.version      = "0.1.0"
 s.summary      = "LingvanexAPI"
 s.description  = "A framework to use LingvaNex Translation API in Swift."
 s.homepage     = "https://github.com/artdima/LingvanexAPI"
