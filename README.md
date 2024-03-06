@@ -1,3 +1,5 @@
+<img width="522" alt="promo-main" src="https://github.com/artdima/LingvanexAPI/blob/main/logo.png?raw=true">
+
 ## LingvanexAPI
 
 [![Version](https://img.shields.io/cocoapods/v/LingvanexAPI.svg?style=flat)](http://cocoadocs.org/artdima/LingvanexAPI)
