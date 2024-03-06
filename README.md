@@ -1,4 +1,6 @@
-<img width="522" alt="promo-main" src="https://github.com/artdima/LingvanexAPI/blob/main/logo.png?raw=true">
+<p align="center">
+    <img width="522" alt="promo-main" src="https://github.com/artdima/LingvanexAPI/blob/main/logo.png?raw=true">
+</p>
 
 ## LingvanexAPI
 
