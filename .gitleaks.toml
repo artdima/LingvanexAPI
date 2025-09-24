@@ -1,0 +1,17 @@
+title = "LingvanexAPI"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "lingvanex-api-key"
+description = "Lingvanex API key"
+regex = '''a_[A-Za-z0-9]{60,}'''
+tags = ["key", "lingvanex"]
+
+[allowlist]
+description = "Placeholders and documentation"
+regexes = [
+  '''PUT_YOUR_KEY_HERE''',
+  '''API_KEY_HERE''',
+]

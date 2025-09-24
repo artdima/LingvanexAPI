@@ -7,36 +7,34 @@
 
 import UIKit
 
-class ViewController: UIViewController {
-
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        // Do any additional setup after loading the view.
-    }
+final class ViewController: UIViewController {
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        LingvanexAPI.shared.start(with: "a_W9cN8eb6C6EPY00UtltX3SaMoRchGD3LElrIxHqjC1sDdTtshh55yNykyt8a3Tl6LMftwmsEpujTpjoC")
-        
-        LingvanexAPI.shared.translate("en_GB", "ru_RU", "Hello") { (translate, error) in
-            if let error = error {
-                print(error.localizedDescription)
-                return
-            }
-            
-            print(translate?.result)
+
+        guard let apiKey = Secrets.apiKey else {
+            print("API key is not configured. Copy Secrets.example.xcconfig to Secrets.xcconfig and set LINGVANEX_API_KEY.")
+            return
         }
-        
-        LingvanexAPI.shared.getLanguages(nil) { (result, error) in
+
+        LingvanexAPI.shared.start(with: apiKey)
+
+        LingvanexAPI.shared.translate("en_GB", "ru_RU", "Hello") { translate, error in
             if let error = error {
                 print(error.localizedDescription)
                 return
             }
-            
-            result.map{
-                print($0.description)
+            if let result = translate?.result {
+                print(result)
             }
+        }
+
+        LingvanexAPI.shared.getLanguages(nil) { languages, error in
+            if let error = error {
+                print(error.localizedDescription)
+                return
+            }
+            languages?.forEach { print($0.englishName) }
         }
     }
 }
-
