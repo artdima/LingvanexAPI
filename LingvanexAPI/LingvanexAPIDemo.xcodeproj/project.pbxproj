@@ -82,7 +82,8 @@
 			children = (
 				F0D48F9E25D14A6B00AA5AE6 /* LingvanexAPI.swift */,
 			);
-			path = Sources;
+			name = LingvanexAPI;
+			path = ../Sources/LingvanexAPI;
 			sourceTree = SOURCE_ROOT;
 		};
 /* End PBXGroup section */

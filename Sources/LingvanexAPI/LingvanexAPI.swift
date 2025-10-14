@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import UIKit
 
 /// A helper class for using Lingvanex API
 public class LingvanexAPI {
@@ -111,7 +110,6 @@ public class LingvanexAPI {
         - platform: api
     */
     
-    @available(iOS 10.0, *)
     public func translate(_ from: String, _ to: String, _ data: String, _ platform: String = "api", _ completion: @escaping ((_ translate: Translate?, _ error: Error?) -> Void)) {
         guard let url = URLComponents(string: API.translate.url)?.url else {
             completion(nil, nil)
@@ -166,7 +164,6 @@ public class LingvanexAPI {
         - code: the language code in the format “language code_code of the country”, which is used to display the names of the languages. The language code is represented only in lowercase letters, the country code only in uppercase letters (example en_GB, es_ES, ru_RU etc). If this option is not present, then English is used by default
     */
     
-    @available(iOS 10.0, *)
     public func getLanguages(_ code: String?, _ platform: String = "api", _ completion: @escaping ((_ translate: [Languages]?, _ error: Error?) -> Void)) {
         guard var urlComponents = URLComponents(string: API.getLanguages.url) else {
             completion(nil, nil)
