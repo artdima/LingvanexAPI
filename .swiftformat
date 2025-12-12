@@ -1,0 +1,28 @@
+--swiftversion 5.9
+
+--exclude .build,Package.swift
+
+--indent 4
+--maxwidth 120
+--wraparguments before-first
+--wrapparameters before-first
+--wrapcollections before-first
+--closingparen balanced
+--commas always
+--trimwhitespace always
+--stripunusedargs closure-only
+--self remove
+--importgrouping testable-bottom
+--emptybraces no-space
+--ranges no-space
+--voidtype void
+
+--enable isEmpty
+--enable redundantType
+--enable sortedImports
+--enable blankLinesAtStartOfScope
+--enable blankLinesAtEndOfScope
+--enable consecutiveBlankLines
+--enable markTypes
+
+--disable wrapMultilineStatementBraces

@@ -1,0 +1,87 @@
+included:
+  - Sources
+  - Tests
+  - LingvanexAPI/LingvanexAPIDemo
+
+excluded:
+  - .build
+  - Package.swift
+
+opt_in_rules:
+  - force_unwrapping
+  - unowned_variable_capture
+  - empty_count
+  - empty_string
+  - first_where
+  - last_where
+  - contains_over_filter_count
+  - redundant_nil_coalescing
+  - unavailable_function
+  - fatal_error_message
+  - discouraged_optional_boolean
+  - overridden_super_call
+  - prohibited_super_call
+  - closure_spacing
+  - operator_usage_whitespace
+  - vertical_whitespace_closing_braces
+  - multiline_parameters
+  - modifier_order
+  - sorted_imports
+  - private_action
+  - private_outlet
+  - toggle_bool
+  - convenience_type
+  - legacy_multiple
+  - static_operator
+  - test_case_accessibility
+
+disabled_rules:
+  - todo
+
+line_length:
+  warning: 120
+  error: 160
+  ignores_comments: true
+  ignores_urls: true
+
+type_body_length:
+  warning: 250
+  error: 400
+
+function_body_length:
+  warning: 50
+  error: 90
+
+file_length:
+  warning: 400
+  error: 600
+  ignore_comment_only_lines: true
+
+cyclomatic_complexity:
+  warning: 8
+  error: 12
+
+nesting:
+  type_level: 2
+
+identifier_name:
+  min_length:
+    warning: 2
+  excluded: [id, to, at, db, ok]
+
+trailing_whitespace:
+  ignores_empty_lines: false
+
+custom_rules:
+  no_print_in_library:
+    included: "Sources/.*\\.swift"
+    name: "print in library code"
+    regex: "(^|\\s)print\\("
+    message: "A library must not write to stdout. Use the logger."
+    severity: error
+  no_try_optional:
+    included: ".*\\.swift"
+    name: "try? swallows the error"
+    regex: "try\\?\\s+JSONDecoder"
+    message: "Decoding errors carry the coding path — do not discard them."
+    severity: error
