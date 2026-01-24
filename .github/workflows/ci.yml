@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package:
+    name: Swift ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, ubuntu-24.04]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: swift build --build-tests
+      - name: Test
+        run: swift test
+
+  platforms:
+    name: xcodebuild ${{ matrix.destination.name }}
+    runs-on: macos-15
+    strategy:
+      fail-fast: false
+      matrix:
+        destination:
+          - { name: iOS, value: "generic/platform=iOS Simulator" }
+          - { name: tvOS, value: "generic/platform=tvOS Simulator" }
+          - { name: watchOS, value: "generic/platform=watchOS Simulator" }
+          - { name: visionOS, value: "generic/platform=visionOS Simulator" }
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: |
+          xcodebuild build \
+            -scheme LingvanexAPI \
+            -destination "${{ matrix.destination.value }}" \
+            | xcbeautify
+
+  lint:
+    name: SwiftLint
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: brew install swiftlint
+      - run: swiftlint lint --strict
+
+  podspec:
+    name: pod lib lint
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: pod lib lint --allow-warnings
+
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
