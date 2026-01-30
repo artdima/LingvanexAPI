@@ -1,0 +1,28 @@
+{
+  "err": null,
+  "result": [
+    {
+      "full_code": "en_GB",
+      "name": "en",
+      "englishName": "English",
+      "codeName": "English",
+      "flagPath": "static/flags/english",
+      "testWordForSyntezis": "Hello",
+      "modes": [
+        { "name": "Translation", "value": true },
+        { "name": "Speech synthesis", "value": true, "genders": true }
+      ]
+    },
+    {
+      "full_code": "ru_RU",
+      "name": "ru",
+      "englishName": "Russian",
+      "codeName": "Русский",
+      "flagPath": "static/flags/russian",
+      "testWordForSyntezis": "Привет",
+      "modes": [
+        { "name": "Translation", "value": true }
+      ]
+    }
+  ]
+}

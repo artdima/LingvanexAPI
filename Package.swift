@@ -26,6 +26,7 @@ let package = Package(
         .testTarget(
             name: "LingvanexAPITests",
             dependencies: ["LingvanexAPI"],
+            resources: [.copy("Fixtures")],
             swiftSettings: swiftSettings
         )
     ]

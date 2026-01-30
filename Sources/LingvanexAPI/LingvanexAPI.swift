@@ -7,6 +7,10 @@
 
 import Foundation
 
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
+
 /// A helper class for using Lingvanex API
 public class LingvanexAPI {
     
@@ -87,8 +91,12 @@ public class LingvanexAPI {
     
     /// API key.
     private var apiKey: String!
-    /// Default URL session.
-    private let session = URLSession(configuration: .default)
+    /// Performs the HTTP calls. Injectable so the client can be exercised without a network.
+    private let transport: HTTPTransport
+
+    init(transport: HTTPTransport = URLSessionTransport()) {
+        self.transport = transport
+    }
     
     /**
     Initialization.
@@ -135,7 +143,7 @@ public class LingvanexAPI {
             return
         }
         
-        let task = session.dataTask(with: urlRequest) { (data, response, error) in
+        transport.send(urlRequest) { data, response, error in
             guard let data = data,                                // is there data
                   let response = response as? HTTPURLResponse,    // is there HTTP response
                   (200 ..< 300) ~= response.statusCode,           // is statusCode 2XX
@@ -152,7 +160,6 @@ public class LingvanexAPI {
             
             completion(loaded, nil)
         }
-        task.resume()
     }
     
     
@@ -186,7 +193,7 @@ public class LingvanexAPI {
         urlRequest.httpMethod = API.getLanguages.method
         urlRequest.setValue("Bearer " + apiKey, forHTTPHeaderField: "Authorization")
         
-        let task = session.dataTask(with: urlRequest) { (data, response, error) in
+        transport.send(urlRequest) { data, response, error in
             guard let data = data,                                // is there data
                   let response = response as? HTTPURLResponse,    // is there HTTP response
                   (200 ..< 300) ~= response.statusCode,           // is statusCode 2XX
@@ -203,7 +210,6 @@ public class LingvanexAPI {
             
             completion(loaded.result, nil)
         }
-        task.resume()
     }
     
 }
