@@ -9,6 +9,7 @@ excluded:
 
 opt_in_rules:
   - force_unwrapping
+  - implicitly_unwrapped_optional
   - unowned_variable_capture
   - empty_count
   - empty_string

@@ -7,7 +7,7 @@ extension LingvanexAPI {
         from: String = "en_GB",
         to: String = "ru_RU",
         text: String = "Hello"
-    ) async -> (value: Translate?, error: Error?) {
+    ) async -> (value: Translation?, error: Error?) {
         await withCheckedContinuation { continuation in
             translate(from, to, text) { translation, error in
                 continuation.resume(returning: (value: translation, error: error))
@@ -15,7 +15,7 @@ extension LingvanexAPI {
         }
     }
 
-    func languageList(displayLanguage: String? = nil) async -> (value: [Languages]?, error: Error?) {
+    func languageList(displayLanguage: String? = nil) async -> (value: [Language]?, error: Error?) {
         await withCheckedContinuation { continuation in
             getLanguages(displayLanguage) { languages, error in
                 continuation.resume(returning: (value: languages, error: error))
