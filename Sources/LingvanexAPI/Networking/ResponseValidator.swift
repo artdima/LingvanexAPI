@@ -35,7 +35,7 @@ enum ResponseValidator {
             throw LingvanexError.unauthorized(message: message)
 
         case 429:
-            throw LingvanexError.rateLimited(retryAfter: retryAfter(in: response), message: message)
+            throw LingvanexError.rateLimited(retryAfter: RetryDecision.retryAfter(for: response), message: message)
 
         default:
             throw LingvanexError.server(status: response.statusCode, message: message)
@@ -61,11 +61,6 @@ enum ResponseValidator {
         } catch {
             return nil
         }
-    }
-
-    private static func retryAfter(in response: HTTPURLResponse) -> TimeInterval? {
-        guard let header = response.value(forHTTPHeaderField: "Retry-After") else { return nil }
-        return TimeInterval(header.trimmingCharacters(in: .whitespaces))
     }
 
     private static func preview(of data: Data) -> String? {

@@ -17,22 +17,12 @@ public class LingvanexAPI {
     /// Shared instance.
     public static let shared = LingvanexAPI()
 
-    /// API structure.
-    private enum API {
-        /// Base Lingvanex API url.
-        static let base = "https://api-b2b.backenster.com/b1/api/v3"
-
-        static let getLanguages = base + "/getLanguages"
-        static let translate = base + "/translate"
-    }
-
-    /// API key.
-    private var apiKey: String?
-    /// Performs the HTTP calls. Injectable so the client can be exercised without a network.
+    private var configuration: LingvanexConfiguration
     private let transport: HTTPTransport
 
-    init(transport: HTTPTransport = URLSessionTransport()) {
-        self.transport = transport
+    init(configuration: LingvanexConfiguration = LingvanexConfiguration(), transport: HTTPTransport? = nil) {
+        self.configuration = configuration
+        self.transport = transport ?? Self.makeTransport(for: configuration)
     }
 
     /**
@@ -42,7 +32,7 @@ public class LingvanexAPI {
         - apiKey: A valid API key to handle requests for this API. Authentication of requests is done by adding the “Authorization” header with the following data format: Bearer The key can be created on the user control panel page https://lingvanex.com/account.
     */
     public func start(with apiKey: String) {
-        self.apiKey = apiKey
+        configuration.apiKey = apiKey
     }
 
     /**
@@ -61,30 +51,17 @@ public class LingvanexAPI {
         _ platform: String = "api",
         _ completion: @escaping ((_ translate: Translation?, _ error: Error?) -> Void)
     ) {
-        let parameters: [String: Any] = [
-            "from": from,
-            "to": to,
-            "data": data,
-            "platform": platform
-        ]
+        let request = TranslateRequest(from: from, to: to, data: data, platform: platform)
 
-        let urlRequest: URLRequest
+        let endpoint: Endpoint<Translation>
         do {
-            urlRequest = try makeRequest(url: API.translate, method: "POST", body: parameters)
+            endpoint = try .translate(request)
         } catch {
             completion(nil, error)
             return
         }
 
-        transport.send(urlRequest) { data, response, error in
-            do {
-                let body = try ResponseValidator.validate(data: data, response: response, error: error)
-                let translation = try ResponseValidator.decode(Translation.self, from: body)
-                completion(translation, nil)
-            } catch {
-                completion(nil, error)
-            }
-        }
+        perform(endpoint, completion: completion)
     }
 
     /**
@@ -99,58 +76,45 @@ public class LingvanexAPI {
         _ platform: String = "api",
         _ completion: @escaping ((_ languages: [Language]?, _ error: Error?) -> Void)
     ) {
-        var queryItems = [URLQueryItem(name: "platform", value: platform)]
-        if let code {
-            queryItems.append(URLQueryItem(name: "code", value: code))
-        }
+        let endpoint = Endpoint<LanguageListResponse>.languages(displayLanguage: code, platform: platform)
 
-        let urlRequest: URLRequest
+        perform(endpoint) { payload, error in
+            completion(payload?.result, error)
+        }
+    }
+
+    /// Every call goes through here: one place for building the request, validating the
+    /// answer, decoding it and turning any failure into a LingvanexError.
+    private func perform<Response: Decodable>(
+        _ endpoint: Endpoint<Response>,
+        completion: @escaping (Response?, Error?) -> Void
+    ) {
+        let request: URLRequest
         do {
-            urlRequest = try makeRequest(url: API.getLanguages, method: "GET", query: queryItems)
+            request = try RequestBuilder(configuration: configuration).makeRequest(for: endpoint)
         } catch {
             completion(nil, error)
             return
         }
 
-        transport.send(urlRequest) { data, response, error in
+        transport.send(request) { data, response, error in
             do {
                 let body = try ResponseValidator.validate(data: data, response: response, error: error)
-                let payload = try ResponseValidator.decode(LanguageListResponse.self, from: body)
-                completion(payload.result, nil)
+                let decoded = try ResponseValidator.decode(Response.self, from: body)
+                completion(decoded, nil)
             } catch {
                 completion(nil, error)
             }
         }
     }
 
-    private func makeRequest(
-        url: String,
-        method: String,
-        query: [URLQueryItem] = [],
-        body: [String: Any]? = nil
-    ) throws -> URLRequest {
-        guard let apiKey else {
-            throw LingvanexError.notConfigured
+    private static func makeTransport(for configuration: LingvanexConfiguration) -> HTTPTransport {
+        let session = URLSessionTransport(configuration: configuration.sessionConfiguration)
+        let retrying = RetryingTransport(wrapping: session, policy: configuration.retryPolicy)
+
+        guard let logger = configuration.logger else {
+            return retrying
         }
-
-        guard var components = URLComponents(string: url) else {
-            throw LingvanexError.invalidURL
-        }
-        components.queryItems = query.isEmpty ? nil : query
-
-        guard let resolved = components.url else {
-            throw LingvanexError.invalidURL
-        }
-
-        var request = URLRequest(url: resolved)
-        request.httpMethod = method
-        request.setValue("Bearer " + apiKey, forHTTPHeaderField: "Authorization")
-
-        if let body {
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            request.httpBody = try JSONSerialization.data(withJSONObject: body, options: .prettyPrinted)
-        }
-
-        return request
+        return LoggingTransport(wrapping: retrying, sink: logger)
     }
 }

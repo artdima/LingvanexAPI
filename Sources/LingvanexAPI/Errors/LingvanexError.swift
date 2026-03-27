@@ -9,6 +9,9 @@ public enum LingvanexError: Error {
     /// The endpoint could not be assembled from the configured base address.
     case invalidURL
 
+    /// The request body could not be encoded.
+    case encoding(underlying: Error)
+
     /// The request never reached the service: no connection, timeout, cancellation.
     case transport(underlying: Error)
 

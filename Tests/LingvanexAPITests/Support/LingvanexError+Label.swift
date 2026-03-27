@@ -8,6 +8,7 @@ extension LingvanexError {
         switch self {
         case .notConfigured: return "notConfigured"
         case .invalidURL: return "invalidURL"
+        case .encoding: return "encoding"
         case .transport: return "transport"
         case .unauthorized: return "unauthorized"
         case .rateLimited: return "rateLimited"

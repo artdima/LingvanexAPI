@@ -8,6 +8,8 @@ extension LingvanexError: LocalizedError {
             return "The Lingvanex client has no API key."
         case .invalidURL:
             return "The Lingvanex endpoint address is not a valid URL."
+        case .encoding:
+            return "The Lingvanex request could not be encoded."
         case let .transport(underlying):
             return underlying.localizedDescription
         case let .unauthorized(message):
@@ -27,6 +29,8 @@ extension LingvanexError: LocalizedError {
         switch self {
         case .notConfigured, .invalidURL:
             return "The client is not set up correctly."
+        case let .encoding(underlying):
+            return underlying.localizedDescription
         case .transport:
             return "The request did not reach the service."
         case .unauthorized:
@@ -57,7 +61,7 @@ extension LingvanexError: LocalizedError {
             return "Check the network connection and try again."
         case .decoding:
             return "The service contract may have changed; update the client."
-        case .invalidURL, .server, .emptyResponse:
+        case .invalidURL, .encoding, .server, .emptyResponse:
             return nil
         }
     }

@@ -14,13 +14,21 @@ final class StubTransport: HTTPTransport {
         var error: Error?
     }
 
-    private let stub: Stub
+    private let stubs: [Stub]
+    private var index = 0
+
     private(set) var requests: [URLRequest] = []
 
     var lastRequest: URLRequest? { requests.last }
 
-    init(_ stub: Stub) {
-        self.stub = stub
+    /// The last stub repeats once the sequence runs out, so a retry test only has to
+    /// describe the answers that differ.
+    init(sequence: [Stub]) {
+        stubs = sequence.isEmpty ? [Stub(data: nil)] : sequence
+    }
+
+    convenience init(_ stub: Stub) {
+        self.init(sequence: [stub])
     }
 
     convenience init(data: Data?, statusCode: Int = 200, headers: [String: String] = [:]) {
@@ -33,6 +41,9 @@ final class StubTransport: HTTPTransport {
 
     func send(_ request: URLRequest, completion: @escaping (Data?, URLResponse?, Error?) -> Void) {
         requests.append(request)
+
+        let stub = stubs[min(index, stubs.count - 1)]
+        index += 1
 
         if let error = stub.error {
             completion(nil, nil, error)
@@ -51,5 +62,26 @@ final class StubTransport: HTTPTransport {
             headerFields: stub.headers
         )
         completion(stub.data, response, nil)
+    }
+}
+
+/// Runs the retry wait immediately and records what it was asked to wait for,
+/// so backoff can be asserted without spending real seconds.
+final class ImmediateScheduler: RetryScheduler {
+
+    private(set) var delays: [TimeInterval] = []
+
+    func schedule(after delay: TimeInterval, work: @escaping () -> Void) {
+        delays.append(delay)
+        work()
+    }
+}
+
+final class LogRecorder {
+
+    private(set) var lines: [String] = []
+
+    func append(_ line: String) {
+        lines.append(line)
     }
 }
