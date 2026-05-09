@@ -6,30 +6,28 @@ import Testing
 struct RequestShapeTests {
 
     private func translateRequest(
-        from: String = "en_GB",
-        to: String = "ru_RU",
-        text: String = "Hello",
-        configuration: LingvanexConfiguration? = nil
+        _ input: TranslationInput = .text("Hello"),
+        from source: LanguageCode? = .enGB,
+        to target: LanguageCode = .ruRU,
+        options: TranslationOptions = .default,
+        configure: (inout LingvanexConfiguration) -> Void = { _ in }
     ) async throws -> URLRequest {
         let transport = StubTransport(data: try Fixture.data("translate_with_transliteration"))
-        var settings = configuration ?? LingvanexConfiguration()
-        settings.apiKey = "test-key"
-        let api = LingvanexAPI(configuration: settings, transport: transport)
-        _ = await api.translated(from: from, to: to, text: text)
+        let client = LingvanexClient.stubbed(transport, configure: configure)
+        _ = try await client.translate(input, from: source, to: target, options: options)
         return try #require(transport.lastRequest)
     }
 
-    private func languagesRequest(displayLanguage: String? = nil) async throws -> URLRequest {
+    private func languagesRequest(displayLanguage: LanguageCode? = nil) async throws -> URLRequest {
         let transport = StubTransport(data: try Fixture.data("languages_success"))
-        let api = LingvanexAPI.stubbed(transport)
-        _ = await api.languageList(displayLanguage: displayLanguage)
+        let client = LingvanexClient.stubbed(transport)
+        _ = try await client.languages(displayLanguage: displayLanguage)
         return try #require(transport.lastRequest)
     }
 
-    private func translateBody() async throws -> [String: Any] {
-        let request = try await translateRequest()
-        let body = try #require(request.httpBody)
-        let object = try JSONSerialization.jsonObject(with: body)
+    private func body(of request: URLRequest) throws -> [String: Any] {
+        let data = try #require(request.httpBody)
+        let object = try JSONSerialization.jsonObject(with: data)
         return try #require(object as? [String: Any])
     }
 
@@ -52,14 +50,13 @@ struct RequestShapeTests {
         #expect(request.httpMethod == "GET")
         #expect(request.url?.path == "/b1/api/v3/getLanguages")
         #expect(request.url?.query?.contains("platform=api") == true)
-        #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer test-key")
         #expect(request.httpBody == nil)
     }
 
     @Test("The display language reaches the query only when it is given")
     func displayLanguageIsOptionalInTheQuery() async throws {
         let withoutCode = try await languagesRequest()
-        let withCode = try await languagesRequest(displayLanguage: "ru_RU")
+        let withCode = try await languagesRequest(displayLanguage: .ruRU)
 
         #expect(withoutCode.url?.query?.contains("code=") == false)
         #expect(withCode.url?.query?.contains("code=ru_RU") == true)
@@ -67,40 +64,29 @@ struct RequestShapeTests {
 
     @Test("A configured base address is used instead of the built-in one")
     func baseURLIsConfigurable() async throws {
-        var configuration = LingvanexConfiguration()
-        configuration.baseURL = try #require(URL(string: "https://lingvanex.internal/api/v3"))
+        let custom = try #require(URL(string: "https://lingvanex.internal/api/v3"))
 
-        let request = try await translateRequest(configuration: configuration)
+        let request = try await translateRequest { $0.baseURL = custom }
 
         #expect(request.url?.absoluteString == "https://lingvanex.internal/api/v3/translate")
     }
 
     // MARK: - Headers
 
-    @Test("Every request announces the content type it accepts")
-    func requestsSendAcceptHeader() async throws {
+    @Test("Every request announces the content type it accepts and identifies the client")
+    func requestsCarryStandardHeaders() async throws {
         let translate = try await translateRequest()
         let languages = try await languagesRequest()
 
         #expect(translate.value(forHTTPHeaderField: "Accept") == "application/json")
         #expect(languages.value(forHTTPHeaderField: "Accept") == "application/json")
-    }
-
-    @Test("Every request identifies the client and its version")
-    func requestsSendUserAgent() async throws {
-        let translate = try await translateRequest()
-        let languages = try await languagesRequest()
-
         #expect(translate.value(forHTTPHeaderField: "User-Agent")?.hasPrefix("LingvanexAPI-Swift/") == true)
         #expect(languages.value(forHTTPHeaderField: "User-Agent")?.hasPrefix("LingvanexAPI-Swift/") == true)
     }
 
     @Test("The configured timeout reaches the request")
     func timeoutIsApplied() async throws {
-        var configuration = LingvanexConfiguration()
-        configuration.timeout = 7
-
-        let request = try await translateRequest(configuration: configuration)
+        let request = try await translateRequest { $0.timeout = 7 }
 
         #expect(request.timeoutInterval == 7)
     }
@@ -109,7 +95,8 @@ struct RequestShapeTests {
 
     @Test("Translate sends the caller's arguments in the body")
     func translateBodyCarriesTheArguments() async throws {
-        let body = try await translateBody()
+        let request = try await translateRequest()
+        let body = try body(of: request)
 
         #expect(body["from"] as? String == "en_GB")
         #expect(body["to"] as? String == "ru_RU")
@@ -120,28 +107,44 @@ struct RequestShapeTests {
     @Test("The body is compact, so no padding travels over the wire")
     func translateBodyIsCompact() async throws {
         let request = try await translateRequest()
-        let body = try #require(request.httpBody)
+        let data = try #require(request.httpBody)
 
-        #expect(String(decoding: body, as: UTF8.self).contains("\n") == false)
+        #expect(String(decoding: data, as: UTF8.self).contains("\n") == false)
     }
 
-    @Test("Translate still does not ask for transliteration or an HTML mode")
-    func translateDoesNotYetSendTheNewerOptions() async throws {
-        let body = try await translateBody()
-
-        #expect(body.keys.contains("enableTransliteration") == false)
-        #expect(body.keys.contains("translateMode") == false)
-    }
-
-    @Test("A request body model omits an absent source language rather than sending null")
-    func absentSourceLanguageIsOmitted() throws {
-        let request = TranslateRequest(from: nil, to: "ru_RU", data: "Hello", platform: "api")
-
-        let encoded = try JSONEncoder().encode(request)
-        let object = try JSONSerialization.jsonObject(with: encoded)
-        let body = try #require(object as? [String: Any])
+    @Test("Auto-detection omits the source language rather than sending null")
+    func autoDetectionOmitsSourceLanguage() async throws {
+        let request = try await translateRequest(from: nil)
+        let body = try body(of: request)
 
         #expect(body.keys.contains("from") == false)
         #expect(body["to"] as? String == "ru_RU")
+    }
+
+    @Test("A batch is sent as an array")
+    func batchIsSentAsAnArray() async throws {
+        let request = try await translateRequest(.batch(["Hello", "Goodbye"]))
+        let body = try body(of: request)
+
+        #expect(body["data"] as? [String] == ["Hello", "Goodbye"])
+    }
+
+    @Test("Default options add nothing to the body")
+    func defaultOptionsAreNotSent() async throws {
+        let request = try await translateRequest()
+        let body = try body(of: request)
+
+        #expect(body.keys.contains("translateMode") == false)
+        #expect(body.keys.contains("enableTransliteration") == false)
+    }
+
+    @Test("HTML mode and transliteration are sent when asked for")
+    func optionsReachTheBody() async throws {
+        let options = TranslationOptions(mode: .html, includeTransliteration: true)
+        let request = try await translateRequest(options: options)
+        let body = try body(of: request)
+
+        #expect(body["translateMode"] as? String == "html")
+        #expect(body["enableTransliteration"] as? Bool == true)
     }
 }

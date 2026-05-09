@@ -4,73 +4,69 @@ import Foundation
 import FoundationNetworking
 #endif
 
-/// Waits before the next attempt. Abstracted so the retry loop can be tested without real time.
-protocol RetryScheduler {
-    func schedule(after delay: TimeInterval, work: @escaping () -> Void)
+/// Waits between attempts. Injected so the backoff can be asserted without spending real time.
+public protocol RetrySleeper {
+    func sleep(for duration: TimeInterval) async throws
 }
 
-struct DispatchRetryScheduler: RetryScheduler {
+public struct TaskSleeper: RetrySleeper {
 
-    func schedule(after delay: TimeInterval, work: @escaping () -> Void) {
-        guard delay > 0 else {
-            work()
-            return
-        }
-        DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + delay, execute: work)
+    public init() {}
+
+    public func sleep(for duration: TimeInterval) async throws {
+        guard duration > 0 else { return }
+        try await Task.sleep(nanoseconds: UInt64(duration * 1_000_000_000))
     }
 }
 
 /// Adds retries to any transport without the client knowing about them.
-final class RetryingTransport: HTTPTransport {
+public struct RetryingTransport: HTTPTransport {
 
     private let base: HTTPTransport
     private let policy: RetryPolicy
-    private let scheduler: RetryScheduler
+    private let sleeper: RetrySleeper
     private let randomFactor: (ClosedRange<Double>) -> Double
 
-    init(
+    public init(
         wrapping base: HTTPTransport,
         policy: RetryPolicy = .default,
-        scheduler: RetryScheduler = DispatchRetryScheduler(),
+        sleeper: RetrySleeper = TaskSleeper(),
         randomFactor: @escaping (ClosedRange<Double>) -> Double = { Double.random(in: $0) }
     ) {
         self.base = base
         self.policy = policy
-        self.scheduler = scheduler
+        self.sleeper = sleeper
         self.randomFactor = randomFactor
     }
 
-    func send(_ request: URLRequest, completion: @escaping (Data?, URLResponse?, Error?) -> Void) {
-        attempt(1, request, completion)
+    public func send(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
+        var attempt = 1
+
+        while true {
+            let isLastAttempt = attempt >= policy.maximumAttempts
+
+            do {
+                let (data, response) = try await base.send(request)
+
+                guard !isLastAttempt, RetryDecision.shouldRetry(status: response.statusCode) else {
+                    return (data, response)
+                }
+                try await wait(before: attempt, retryAfter: RetryDecision.retryAfter(for: response))
+            } catch let error as LingvanexError {
+                guard !isLastAttempt, RetryDecision.shouldRetry(error) else { throw error }
+                try await wait(before: attempt, retryAfter: nil)
+            }
+
+            attempt += 1
+        }
     }
 
-    private func attempt(
-        _ number: Int,
-        _ request: URLRequest,
-        _ completion: @escaping (Data?, URLResponse?, Error?) -> Void
-    ) {
-        base.send(request) { [weak self] data, response, error in
-            guard let self else {
-                completion(data, response, error)
-                return
-            }
-
-            guard number < policy.maximumAttempts,
-                  RetryDecision.shouldRetry(response: response, error: error) else {
-                completion(data, response, error)
-                return
-            }
-
-            let retryAfter = (response as? HTTPURLResponse).flatMap(RetryDecision.retryAfter(for:))
-            let delay = policy.delay(forAttempt: number, retryAfter: retryAfter, randomFactor: randomFactor)
-
-            scheduler.schedule(after: delay) { [weak self] in
-                guard let self else {
-                    completion(data, response, error)
-                    return
-                }
-                attempt(number + 1, request, completion)
-            }
+    private func wait(before attempt: Int, retryAfter: TimeInterval?) async throws {
+        let delay = policy.delay(forAttempt: attempt, retryAfter: retryAfter, randomFactor: randomFactor)
+        do {
+            try await sleeper.sleep(for: delay)
+        } catch {
+            throw LingvanexError.cancelled
         }
     }
 }

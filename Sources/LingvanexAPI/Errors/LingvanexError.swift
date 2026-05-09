@@ -3,8 +3,11 @@ import Foundation
 /// Every way a Lingvanex call can fail.
 public enum LingvanexError: Error {
 
-    /// `start(with:)` was never called, so there is no key to authenticate with.
+    /// The client has no API key.
     case notConfigured
+
+    /// A language code was not in `language_COUNTRY` form.
+    case invalidLanguageCode(String)
 
     /// The endpoint could not be assembled from the configured base address.
     case invalidURL
@@ -12,8 +15,11 @@ public enum LingvanexError: Error {
     /// The request body could not be encoded.
     case encoding(underlying: Error)
 
-    /// The request never reached the service: no connection, timeout, cancellation.
+    /// The request never reached the service: no connection, timeout, unreachable host.
     case transport(underlying: Error)
+
+    /// The call was cancelled by its caller.
+    case cancelled
 
     /// The key was rejected (401, 403).
     case unauthorized(message: String?)

@@ -8,28 +8,19 @@ enum ResponseValidator {
 
     private static let rawBodyPreviewLimit = 512
 
-    /// Turns a URLSession-shaped answer into a body to decode, or throws the most specific error available.
-    static func validate(data: Data?, response: URLResponse?, error: Error?) throws -> Data {
-        if let error {
-            throw LingvanexError.transport(underlying: error)
-        }
-
-        guard let response = response as? HTTPURLResponse else {
-            throw LingvanexError.emptyResponse
-        }
-
-        let body = data ?? Data()
-        let message = serverMessage(in: body)
+    /// Turns an answer into a body to decode, or throws the most specific error available.
+    static func validate(data: Data, response: HTTPURLResponse) throws -> Data {
+        let message = serverMessage(in: data)
 
         switch response.statusCode {
         case 200 ..< 300:
             if let message {
                 throw LingvanexError.server(status: response.statusCode, message: message)
             }
-            guard !body.isEmpty else {
+            guard !data.isEmpty else {
                 throw LingvanexError.emptyResponse
             }
-            return body
+            return data
 
         case 401, 403:
             throw LingvanexError.unauthorized(message: message)

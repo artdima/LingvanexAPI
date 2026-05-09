@@ -27,10 +27,10 @@ extension Endpoint where Response == Translation {
 
 extension Endpoint where Response == LanguageListResponse {
 
-    static func languages(displayLanguage: String?, platform: String) -> Endpoint {
+    static func languages(displayLanguage: LanguageCode?, platform: String) -> Endpoint {
         var query = [URLQueryItem(name: "platform", value: platform)]
         if let displayLanguage {
-            query.append(URLQueryItem(name: "code", value: displayLanguage))
+            query.append(URLQueryItem(name: "code", value: displayLanguage.rawValue))
         }
         return Endpoint(path: "getLanguages", method: .get, query: query)
     }

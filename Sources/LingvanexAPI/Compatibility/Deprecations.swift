@@ -14,8 +14,11 @@ public extension LingvanexAPI {
 
 public extension Translation {
 
+    @available(*, deprecated, message: "Use text, or output for a batch translation")
+    var result: String { output.text ?? output.values.joined(separator: "\n") }
+
     @available(*, deprecated, renamed: "detectedSourceLanguage")
-    var from: String? { detectedSourceLanguage }
+    var from: String? { detectedSourceLanguage?.rawValue }
 
     @available(*, deprecated, renamed: "charactersFromCache")
     var cacheUse: Int? { charactersFromCache }
@@ -26,7 +29,7 @@ public extension Translation {
     @available(*, deprecated, message: "Use transliteration?.target")
     var targetTransliteration: String? { transliteration?.target }
 
-    @available(*, deprecated, message: "A failure is now delivered as a LingvanexError instead of a field")
+    @available(*, deprecated, message: "A failure is now thrown as a LingvanexError instead of being a field")
     var err: String? { nil }
 }
 

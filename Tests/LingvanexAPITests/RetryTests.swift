@@ -41,137 +41,146 @@ struct RetryPolicyTests {
         #expect(policy.delay(forAttempt: 1, retryAfter: nil, randomFactor: { $0.upperBound }) == 1.5)
     }
 
-    @Test("Only failures that time can fix are retried")
-    func retryableOutcomes() throws {
-        let url = try #require(URL(string: "https://example.com"))
-        func response(_ status: Int) -> HTTPURLResponse? {
-            HTTPURLResponse(url: url, statusCode: status, httpVersion: nil, headerFields: nil)
-        }
+    @Test("Only statuses that time can fix are retried")
+    func retryableStatuses() {
+        #expect(RetryDecision.shouldRetry(status: 429))
+        #expect(RetryDecision.shouldRetry(status: 500))
+        #expect(RetryDecision.shouldRetry(status: 503))
 
-        #expect(RetryDecision.shouldRetry(response: response(429), error: nil))
-        #expect(RetryDecision.shouldRetry(response: response(500), error: nil))
-        #expect(RetryDecision.shouldRetry(response: response(503), error: nil))
-        #expect(RetryDecision.shouldRetry(response: nil, error: URLError(.timedOut)))
-        #expect(RetryDecision.shouldRetry(response: nil, error: URLError(.networkConnectionLost)))
+        #expect(RetryDecision.shouldRetry(status: 200) == false)
+        #expect(RetryDecision.shouldRetry(status: 400) == false)
+        #expect(RetryDecision.shouldRetry(status: 401) == false)
+        #expect(RetryDecision.shouldRetry(status: 404) == false)
+    }
 
-        #expect(RetryDecision.shouldRetry(response: response(200), error: nil) == false)
-        #expect(RetryDecision.shouldRetry(response: response(400), error: nil) == false)
-        #expect(RetryDecision.shouldRetry(response: response(401), error: nil) == false)
-        #expect(RetryDecision.shouldRetry(response: response(404), error: nil) == false)
-        #expect(RetryDecision.shouldRetry(response: nil, error: URLError(.cancelled)) == false)
+    @Test("Only network failures that time can fix are retried")
+    func retryableErrors() {
+        #expect(RetryDecision.shouldRetry(.transport(underlying: URLError(.timedOut))))
+        #expect(RetryDecision.shouldRetry(.transport(underlying: URLError(.networkConnectionLost))))
+
+        #expect(RetryDecision.shouldRetry(.cancelled) == false)
+        #expect(RetryDecision.shouldRetry(.transport(underlying: URLError(.cancelled))) == false)
+        #expect(RetryDecision.shouldRetry(.unauthorized(message: nil)) == false)
+        #expect(RetryDecision.shouldRetry(.emptyResponse) == false)
     }
 }
 
 @Suite("Retrying transport")
 struct RetryingTransportTests {
 
-    private func envelope() throws -> Data {
-        try Fixture.data("translate_error_envelope")
-    }
-
     private func client(
         _ stubs: [StubTransport.Stub],
         policy: RetryPolicy = RetryPolicy(maximumAttempts: 3, baseDelay: 1, maximumDelay: 8)
-    ) -> (api: LingvanexAPI, base: StubTransport, clock: ImmediateScheduler) {
+    ) -> (client: LingvanexClient, base: StubTransport, sleeper: RecordingSleeper) {
         let base = StubTransport(sequence: stubs)
-        let clock = ImmediateScheduler()
+        let sleeper = RecordingSleeper()
         let retrying = RetryingTransport(
             wrapping: base,
             policy: policy,
-            scheduler: clock,
+            sleeper: sleeper,
             randomFactor: { _ in 1 }
         )
-        let api = LingvanexAPI(transport: retrying)
-        api.start(with: "test-key")
-        return (api, base, clock)
+        return (LingvanexClient.stubbed(retrying), base, sleeper)
     }
 
     @Test("A rate limit is retried and the second answer is used")
     func rateLimitIsRetried() async throws {
-        let success = try Fixture.data("translate_success")
         let context = client([
-            StubTransport.Stub(data: try envelope(), statusCode: 429),
-            StubTransport.Stub(data: success, statusCode: 200)
+            StubTransport.Stub(data: try Fixture.data("translate_error_envelope"), statusCode: 429),
+            StubTransport.Stub(data: try Fixture.data("translate_success"), statusCode: 200)
         ])
 
-        let outcome = await context.api.translated()
+        let translation = try await context.client.translate("Hello", to: .ruRU)
 
-        #expect(outcome.value?.result == "Привет")
+        #expect(translation.text == "Привет")
         #expect(context.base.requests.count == 2)
     }
 
     @Test("A network timeout is retried")
     func timeoutIsRetried() async throws {
-        let success = try Fixture.data("translate_success")
         let context = client([
             StubTransport.Stub(data: nil, error: URLError(.timedOut)),
-            StubTransport.Stub(data: success, statusCode: 200)
+            StubTransport.Stub(data: try Fixture.data("translate_success"), statusCode: 200)
         ])
 
-        let outcome = await context.api.translated()
+        let translation = try await context.client.translate("Hello", to: .ruRU)
 
-        #expect(outcome.value?.result == "Привет")
+        #expect(translation.text == "Привет")
         #expect(context.base.requests.count == 2)
     }
 
     @Test("A rejected key is not retried")
     func unauthorizedIsNotRetried() async throws {
-        let context = client([StubTransport.Stub(data: try envelope(), statusCode: 401)])
+        let context = client([
+            StubTransport.Stub(data: try Fixture.data("translate_error_envelope"), statusCode: 401)
+        ])
 
-        let outcome = await context.api.translated()
+        let error = await lingvanexFailure { _ = try await context.client.translate("Hello", to: .ruRU) }
 
-        #expect((outcome.error as? LingvanexError)?.label == "unauthorized")
+        #expect(error?.label == "unauthorized")
         #expect(context.base.requests.count == 1)
     }
 
     @Test("A bad request is not retried")
     func badRequestIsNotRetried() async throws {
-        let context = client([StubTransport.Stub(data: try envelope(), statusCode: 400)])
+        let context = client([
+            StubTransport.Stub(data: try Fixture.data("translate_error_envelope"), statusCode: 400)
+        ])
 
-        _ = await context.api.translated()
+        _ = await lingvanexFailure { _ = try await context.client.translate("Hello", to: .ruRU) }
 
         #expect(context.base.requests.count == 1)
     }
 
     @Test("Attempts stop at the configured limit and the last failure is reported")
     func attemptsAreCapped() async throws {
-        let context = client([StubTransport.Stub(data: try envelope(), statusCode: 500)])
+        let context = client([
+            StubTransport.Stub(data: try Fixture.data("translate_error_envelope"), statusCode: 500)
+        ])
 
-        let outcome = await context.api.translated()
+        let error = await lingvanexFailure { _ = try await context.client.translate("Hello", to: .ruRU) }
 
         #expect(context.base.requests.count == 3)
-        #expect((outcome.error as? LingvanexError)?.label == "server")
+        #expect(error?.label == "server")
     }
 
     @Test("The waits between attempts follow the backoff")
     func waitsFollowTheBackoff() async throws {
-        let context = client([StubTransport.Stub(data: try envelope(), statusCode: 500)])
+        let context = client([
+            StubTransport.Stub(data: try Fixture.data("translate_error_envelope"), statusCode: 500)
+        ])
 
-        _ = await context.api.translated()
+        _ = await lingvanexFailure { _ = try await context.client.translate("Hello", to: .ruRU) }
 
-        #expect(context.clock.delays == [1, 2])
+        #expect(context.sleeper.delays == [1, 2])
     }
 
     @Test("Retry-After from the service replaces the computed wait")
     func retryAfterIsHonoured() async throws {
         let context = client([
-            StubTransport.Stub(data: try envelope(), statusCode: 429, headers: ["Retry-After": "4"]),
+            StubTransport.Stub(
+                data: try Fixture.data("translate_error_envelope"),
+                statusCode: 429,
+                headers: ["Retry-After": "4"]
+            ),
             StubTransport.Stub(data: try Fixture.data("translate_success"), statusCode: 200)
         ])
 
-        _ = await context.api.translated()
+        _ = try await context.client.translate("Hello", to: .ruRU)
 
-        #expect(context.clock.delays == [4])
+        #expect(context.sleeper.delays == [4])
     }
 
     @Test("A successful call is sent once")
     func successIsNotRetried() async throws {
-        let context = client([StubTransport.Stub(data: try Fixture.data("translate_success"), statusCode: 200)])
+        let context = client([
+            StubTransport.Stub(data: try Fixture.data("translate_success"), statusCode: 200)
+        ])
 
-        _ = await context.api.translated()
+        _ = try await context.client.translate("Hello", to: .ruRU)
 
         #expect(context.base.requests.count == 1)
-        #expect(context.clock.delays.isEmpty)
+        #expect(context.sleeper.delays.isEmpty)
     }
 }
 
@@ -192,25 +201,29 @@ struct LoggingTransportTests {
         #expect(LoggingTransport.redactAuthorization("Bearer short") == "Bearer ***")
     }
 
+    @Test("An API key masks itself when printed")
+    func apiKeyMasksItself() {
+        let key = APIKey("a_W9cN8eb6C6EPY00UtltX3SaMoRchGD3LElr")
+
+        #expect("\(key)".contains("a_W9cN8eb6C6EPY00UtltX3SaMoRchGD3LElr") == false)
+        #expect("\(key)" == "a_W9…LElr")
+    }
+
     @Test("A traced request logs its method, url and redacted headers")
     func requestIsTraced() async throws {
         let recorder = LogRecorder()
-        var configuration = LingvanexConfiguration()
-        configuration.apiKey = "a_W9cN8eb6C6EPY00UtltX3SaMoRchGD3LElr"
-
         let base = StubTransport(data: try Fixture.data("translate_success"))
-        let api = LingvanexAPI(
-            configuration: configuration,
-            transport: LoggingTransport(wrapping: base, sink: { recorder.append($0) })
+        let client = LingvanexClient.stubbed(
+            LoggingTransport(wrapping: base, sink: { recorder.append($0) }),
+            apiKey: "a_W9cN8eb6C6EPY00UtltX3SaMoRchGD3LElr"
         )
 
-        _ = await api.translated()
+        _ = try await client.translate("Hello", to: .ruRU)
 
-        let lines = recorder.lines
-        #expect(lines.count == 2)
-        #expect(lines.first?.contains("POST") == true)
-        #expect(lines.first?.contains("/translate") == true)
-        #expect(lines.first?.contains("a_W9cN8eb6C6EPY00UtltX3SaMoRchGD3LElr") == false)
-        #expect(lines.last?.contains("200") == true)
+        #expect(recorder.lines.count == 2)
+        #expect(recorder.lines.first?.contains("POST") == true)
+        #expect(recorder.lines.first?.contains("/translate") == true)
+        #expect(recorder.lines.first?.contains("a_W9cN8eb6C6EPY00UtltX3SaMoRchGD3LElr") == false)
+        #expect(recorder.lines.last?.contains("200") == true)
     }
 }

@@ -1,0 +1,7 @@
+{
+  "err": null,
+  "result": ["Привет", "Пока"],
+  "cacheUse": 0,
+  "source": ["Hello", "Goodbye"],
+  "from": "en_GB"
+}

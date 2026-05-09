@@ -4,19 +4,35 @@ import Foundation
 import FoundationNetworking
 #endif
 
-protocol HTTPTransport {
-    func send(_ request: URLRequest, completion: @escaping (Data?, URLResponse?, Error?) -> Void)
+/// Performs one HTTP exchange. Async so that cancelling the calling task cancels the
+/// request itself, and so decorators can be written as plain sequential code.
+public protocol HTTPTransport {
+    func send(_ request: URLRequest) async throws -> (Data, HTTPURLResponse)
 }
 
-final class URLSessionTransport: HTTPTransport {
+public struct URLSessionTransport: HTTPTransport {
 
     private let session: URLSession
 
-    init(configuration: URLSessionConfiguration = .default) {
+    public init(configuration: URLSessionConfiguration = .default) {
         session = URLSession(configuration: configuration)
     }
 
-    func send(_ request: URLRequest, completion: @escaping (Data?, URLResponse?, Error?) -> Void) {
-        session.dataTask(with: request, completionHandler: completion).resume()
+    public func send(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
+        do {
+            let (data, response) = try await session.data(for: request)
+            guard let http = response as? HTTPURLResponse else {
+                throw LingvanexError.emptyResponse
+            }
+            return (data, http)
+        } catch let error as LingvanexError {
+            throw error
+        } catch is CancellationError {
+            throw LingvanexError.cancelled
+        } catch let error as URLError where error.code == .cancelled {
+            throw LingvanexError.cancelled
+        } catch {
+            throw LingvanexError.transport(underlying: error)
+        }
     }
 }

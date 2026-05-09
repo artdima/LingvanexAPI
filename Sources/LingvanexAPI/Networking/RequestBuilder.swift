@@ -11,7 +11,7 @@ struct RequestBuilder {
     let configuration: LingvanexConfiguration
 
     func makeRequest<Response>(for endpoint: Endpoint<Response>) throws -> URLRequest {
-        guard let apiKey = configuration.apiKey, !apiKey.isEmpty else {
+        guard !configuration.apiKey.isEmpty else {
             throw LingvanexError.notConfigured
         }
 
@@ -28,7 +28,7 @@ struct RequestBuilder {
         var request = URLRequest(url: url)
         request.httpMethod = endpoint.method.rawValue
         request.timeoutInterval = configuration.timeout
-        request.setValue("Bearer " + apiKey, forHTTPHeaderField: "Authorization")
+        request.setValue("Bearer " + configuration.apiKey.value, forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.setValue(configuration.userAgent, forHTTPHeaderField: "User-Agent")
 

@@ -6,32 +6,35 @@ import FoundationNetworking
 
 /// Traces requests through a sink the host supplies. Off unless one is configured:
 /// a library has no business choosing where an application's logs go.
-struct LoggingTransport: HTTPTransport {
+public struct LoggingTransport: HTTPTransport {
 
     private let base: HTTPTransport
     private let sink: (String) -> Void
 
-    init(wrapping base: HTTPTransport, sink: @escaping (String) -> Void) {
+    public init(wrapping base: HTTPTransport, sink: @escaping (String) -> Void) {
         self.base = base
         self.sink = sink
     }
 
-    func send(_ request: URLRequest, completion: @escaping (Data?, URLResponse?, Error?) -> Void) {
-        sink("→ \(request.httpMethod ?? "?") \(request.url?.absoluteString ?? "?") \(Self.describeHeaders(of: request))")
+    public func send(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
+        let method = request.httpMethod ?? "?"
+        let url = request.url?.absoluteString ?? "?"
+        sink("→ \(method) \(url) \(Self.describeHeaders(of: request))")
 
-        base.send(request) { data, response, error in
-            if let error {
-                sink("← failed: \(error.localizedDescription)")
-            } else if let response = response as? HTTPURLResponse {
-                sink("← \(response.statusCode), \(data?.count ?? 0) bytes")
-            }
-            completion(data, response, error)
+        do {
+            let (data, response) = try await base.send(request)
+            sink("← \(response.statusCode), \(data.count) bytes")
+            return (data, response)
+        } catch {
+            sink("← failed: \(error.localizedDescription)")
+            throw error
         }
     }
 
     /// The key must never reach a log file, a crash report or a support ticket.
     static func redactAuthorization(_ value: String) -> String {
-        let token = value.hasPrefix("Bearer ") ? String(value.dropFirst("Bearer ".count)) : value
+        let prefix = "Bearer "
+        let token = value.hasPrefix(prefix) ? String(value.dropFirst(prefix.count)) : value
         guard token.count > 12 else { return "Bearer ***" }
         return "Bearer \(token.prefix(4))…\(token.suffix(4))"
     }
