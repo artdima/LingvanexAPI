@@ -6,6 +6,7 @@ import Testing
 // and are the only ones in the package. Swift Testing refuses @Test on a deprecated
 // declaration, so they cannot be silenced by marking the suite deprecated; CI enforces
 // warnings-as-errors on the library build instead, where there are none.
+@MainActor
 @Suite("Compatibility with the 0.x API")
 struct CompatibilityTests {
 

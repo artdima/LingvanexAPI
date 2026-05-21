@@ -14,7 +14,7 @@ import FoundationNetworking
 ///
 /// The key is required to construct the client, so a client that is not configured
 /// cannot exist. Cancelling the calling task cancels the request.
-public struct LingvanexClient {
+public struct LingvanexClient: Sendable {
 
     private let configuration: LingvanexConfiguration
     private let transport: HTTPTransport

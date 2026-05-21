@@ -4,7 +4,8 @@ import Foundation
 ///
 /// Interpolating this type into a log line, a crash report or an error message
 /// yields a mask; the key itself is only reachable inside the library.
-public struct APIKey: Hashable, ExpressibleByStringLiteral, CustomStringConvertible, CustomDebugStringConvertible {
+public struct APIKey: Hashable, Sendable, ExpressibleByStringLiteral,
+                      CustomStringConvertible, CustomDebugStringConvertible {
 
     let value: String
 

@@ -1,13 +1,13 @@
 import Foundation
 
-enum HTTPMethod: String {
+enum HTTPMethod: String, Sendable {
     case get = "GET"
     case post = "POST"
 }
 
 /// One call the service offers. The generic parameter is what its body decodes into,
 /// so the pipeline can infer the response type from the endpoint alone.
-struct Endpoint<Response: Decodable> {
+struct Endpoint<Response: Decodable>: Sendable {
     let path: String
     let method: HTTPMethod
     var query: [URLQueryItem] = []
@@ -20,7 +20,7 @@ extension Endpoint where Response == Translation {
         do {
             return Endpoint(path: "translate", method: .post, body: try JSONEncoder().encode(request))
         } catch {
-            throw LingvanexError.encoding(underlying: error)
+            throw LingvanexError.encoding(reason: error.localizedDescription)
         }
     }
 }

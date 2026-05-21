@@ -6,7 +6,7 @@ import FoundationNetworking
 
 /// Performs one HTTP exchange. Async so that cancelling the calling task cancels the
 /// request itself, and so decorators can be written as plain sequential code.
-public protocol HTTPTransport {
+public protocol HTTPTransport: Sendable {
     func send(_ request: URLRequest) async throws -> (Data, HTTPURLResponse)
 }
 
@@ -31,8 +31,10 @@ public struct URLSessionTransport: HTTPTransport {
             throw LingvanexError.cancelled
         } catch let error as URLError where error.code == .cancelled {
             throw LingvanexError.cancelled
-        } catch {
+        } catch let error as URLError {
             throw LingvanexError.transport(underlying: error)
+        } catch {
+            throw LingvanexError.transport(underlying: TransportFailure(error))
         }
     }
 }

@@ -1,7 +1,7 @@
 import Foundation
 
 /// The result of a translation request.
-public struct Translation: Decodable, Equatable {
+public struct Translation: Decodable, Equatable, Sendable {
 
     /// The translation, in the same shape as the input: a string in, a string out.
     public let output: TranslationOutput
@@ -48,7 +48,7 @@ public struct Translation: Decodable, Equatable {
 }
 
 /// Transliterated forms of the source and the translation.
-public struct Transliteration: Equatable {
+public struct Transliteration: Equatable, Sendable {
 
     public let source: String?
     public let target: String?

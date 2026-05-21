@@ -5,7 +5,7 @@ import FoundationNetworking
 #endif
 
 /// Waits between attempts. Injected so the backoff can be asserted without spending real time.
-public protocol RetrySleeper {
+public protocol RetrySleeper: Sendable {
     func sleep(for duration: TimeInterval) async throws
 }
 
@@ -22,16 +22,16 @@ public struct TaskSleeper: RetrySleeper {
 /// Adds retries to any transport without the client knowing about them.
 public struct RetryingTransport: HTTPTransport {
 
-    private let base: HTTPTransport
+    private let base: any HTTPTransport
     private let policy: RetryPolicy
-    private let sleeper: RetrySleeper
-    private let randomFactor: (ClosedRange<Double>) -> Double
+    private let sleeper: any RetrySleeper
+    private let randomFactor: @Sendable (ClosedRange<Double>) -> Double
 
     public init(
-        wrapping base: HTTPTransport,
+        wrapping base: any HTTPTransport,
         policy: RetryPolicy = .default,
-        sleeper: RetrySleeper = TaskSleeper(),
-        randomFactor: @escaping (ClosedRange<Double>) -> Double = { Double.random(in: $0) }
+        sleeper: any RetrySleeper = TaskSleeper(),
+        randomFactor: @escaping @Sendable (ClosedRange<Double>) -> Double = { Double.random(in: $0) }
     ) {
         self.base = base
         self.policy = policy

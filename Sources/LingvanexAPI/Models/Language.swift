@@ -1,7 +1,7 @@
 import Foundation
 
 /// One language supported by the service.
-public struct Language: Decodable, Equatable {
+public struct Language: Decodable, Equatable, Sendable {
 
     /// Language code in `language_COUNTRY` form, for example `en_GB`.
     public let fullCode: String
@@ -48,7 +48,7 @@ public struct Language: Decodable, Equatable {
 }
 
 /// A capability the service offers for a language.
-public struct LanguageFeature: Decodable, Equatable {
+public struct LanguageFeature: Decodable, Equatable, Sendable {
 
     /// Name of the capability, for example `Translation` or `Speech synthesis`.
     public let name: String

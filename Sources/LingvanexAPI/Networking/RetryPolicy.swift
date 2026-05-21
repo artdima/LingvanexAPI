@@ -6,7 +6,7 @@ import FoundationNetworking
 
 /// How a transient failure is retried. Exponential backoff with jitter, because a fleet
 /// of clients retrying on the same schedule is what turns an overload into an outage.
-public struct RetryPolicy: Equatable {
+public struct RetryPolicy: Equatable, Sendable {
 
     public static let `default` = RetryPolicy()
     public static let none = RetryPolicy(maximumAttempts: 1)

@@ -9,11 +9,18 @@ import Foundation
 
 /// The 0.x entry point, kept so existing code keeps compiling.
 ///
-/// It forwards to ``LingvanexClient``. Two things changed that no wrapper can hide:
+/// It forwards to ``LingvanexClient``. Three things changed that no wrapper can hide:
 /// a failure now arrives as a ``LingvanexError`` where it used to arrive as `nil, nil`,
-/// and an unconfigured client reports `.notConfigured` instead of crashing.
+/// an unconfigured client reports `.notConfigured` instead of crashing, and the type is
+/// bound to the main actor.
+///
+/// The main-actor binding is what the mutable singleton always needed and never declared:
+/// reconfiguring it from one thread while a request read the key was a data race. Callers
+/// that used it from the main thread — which is what the completion handlers assumed —
+/// are unaffected, and their completions now arrive on the main actor by construction.
 ///
 /// This type is removed in 2.0.
+@MainActor
 public final class LingvanexAPI {
 
     @available(*, deprecated, message: "Create a LingvanexClient with its key instead of configuring a singleton")
@@ -48,7 +55,7 @@ public final class LingvanexAPI {
         _ to: String,
         _ data: String,
         _ platform: String = "api",
-        _ completion: @escaping ((_ translate: Translation?, _ error: Error?) -> Void)
+        _ completion: @escaping @MainActor (_ translate: Translation?, _ error: Error?) -> Void
     ) {
         guard let client else {
             completion(nil, LingvanexError.notConfigured)
@@ -58,14 +65,11 @@ public final class LingvanexAPI {
             completion(nil, LingvanexError.invalidLanguageCode(to))
             return
         }
+        let source = LanguageCode(rawValue: from)
 
-        Task {
+        Task { @MainActor in
             do {
-                let translation = try await client.translate(
-                    .text(data),
-                    from: LanguageCode(rawValue: from),
-                    to: target
-                )
+                let translation = try await client.translate(.text(data), from: source, to: target)
                 completion(translation, nil)
             } catch {
                 completion(nil, error)
@@ -77,16 +81,17 @@ public final class LingvanexAPI {
     public func getLanguages(
         _ code: String?,
         _ platform: String = "api",
-        _ completion: @escaping ((_ languages: [Language]?, _ error: Error?) -> Void)
+        _ completion: @escaping @MainActor (_ languages: [Language]?, _ error: Error?) -> Void
     ) {
         guard let client else {
             completion(nil, LingvanexError.notConfigured)
             return
         }
+        let displayLanguage = code.flatMap(LanguageCode.init(rawValue:))
 
-        Task {
+        Task { @MainActor in
             do {
-                let languages = try await client.languages(displayLanguage: code.flatMap(LanguageCode.init(rawValue:)))
+                let languages = try await client.languages(displayLanguage: displayLanguage)
                 completion(languages, nil)
             } catch {
                 completion(nil, error)

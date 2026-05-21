@@ -37,7 +37,7 @@ enum ResponseValidator {
         do {
             return try JSONDecoder().decode(type, from: data)
         } catch let decodingError as DecodingError {
-            throw LingvanexError.decoding(underlying: decodingError, rawBody: preview(of: data))
+            throw LingvanexError.decoding(DecodingFailure(decodingError), rawBody: preview(of: data))
         }
     }
 

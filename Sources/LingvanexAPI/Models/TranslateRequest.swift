@@ -2,7 +2,7 @@ import Foundation
 
 /// Body of a `translate` call. Typed rather than a dictionary, so a mistyped key
 /// is a compile error instead of a puzzling answer from the service.
-struct TranslateRequest: Encodable, Equatable {
+struct TranslateRequest: Encodable, Equatable, Sendable {
 
     let from: LanguageCode?
     let to: LanguageCode

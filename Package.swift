@@ -2,9 +2,7 @@
 
 import PackageDescription
 
-// Language mode stays at v5 until the client is Sendable end to end;
-// the switch to v6 is a separate, verifiable step.
-let swiftSettings: [SwiftSetting] = [.swiftLanguageMode(.v5)]
+let swiftSettings: [SwiftSetting] = [.swiftLanguageMode(.v6)]
 
 let package = Package(
     name: "LingvanexAPI",

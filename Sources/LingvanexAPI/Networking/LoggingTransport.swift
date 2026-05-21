@@ -8,10 +8,10 @@ import FoundationNetworking
 /// a library has no business choosing where an application's logs go.
 public struct LoggingTransport: HTTPTransport {
 
-    private let base: HTTPTransport
-    private let sink: (String) -> Void
+    private let base: any HTTPTransport
+    private let sink: @Sendable (String) -> Void
 
-    public init(wrapping base: HTTPTransport, sink: @escaping (String) -> Void) {
+    public init(wrapping base: any HTTPTransport, sink: @escaping @Sendable (String) -> Void) {
         self.base = base
         self.sink = sink
     }

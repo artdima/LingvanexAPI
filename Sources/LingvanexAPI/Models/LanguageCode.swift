@@ -4,7 +4,7 @@ import Foundation
 ///
 /// Having a type here is what stops the commonest mistake in a translation API:
 /// two `String` arguments in a row that the compiler is happy to see swapped.
-public struct LanguageCode: RawRepresentable, Hashable, Codable, CustomStringConvertible {
+public struct LanguageCode: RawRepresentable, Hashable, Sendable, Codable, CustomStringConvertible {
 
     public let rawValue: String
 

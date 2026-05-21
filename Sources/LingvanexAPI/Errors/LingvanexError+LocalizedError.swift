@@ -22,8 +22,8 @@ extension LingvanexError: LocalizedError {
             return message ?? "The Lingvanex request limit is exhausted."
         case let .server(status, message):
             return message ?? "Lingvanex responded with status \(status)."
-        case let .decoding(underlying, _):
-            return "The Lingvanex response could not be read: \(underlying.readableReason)"
+        case let .decoding(failure, _):
+            return "The Lingvanex response could not be read: \(failure.reason)"
         case .emptyResponse:
             return "Lingvanex returned an empty response."
         }
@@ -35,8 +35,8 @@ extension LingvanexError: LocalizedError {
             return "The client is not set up correctly."
         case .invalidLanguageCode:
             return "A language code looks like en_GB: lowercase language, uppercase country."
-        case let .encoding(underlying):
-            return underlying.localizedDescription
+        case let .encoding(reason):
+            return reason
         case .transport:
             return "The request did not reach the service."
         case .cancelled:
@@ -74,31 +74,5 @@ extension LingvanexError: LocalizedError {
         case .invalidURL, .encoding, .cancelled, .server, .emptyResponse:
             return nil
         }
-    }
-}
-
-private extension DecodingError {
-
-    var readableReason: String {
-        switch self {
-        case let .keyNotFound(key, context):
-            return "the field \"\(key.stringValue)\" is missing\(context.pathSuffix)"
-        case let .valueNotFound(_, context):
-            return "a required value is null\(context.pathSuffix)"
-        case let .typeMismatch(type, context):
-            return "expected \(type)\(context.pathSuffix)"
-        case let .dataCorrupted(context):
-            return "the body is not valid JSON\(context.pathSuffix)"
-        @unknown default:
-            return localizedDescription
-        }
-    }
-}
-
-private extension DecodingError.Context {
-
-    var pathSuffix: String {
-        let path = codingPath.map(\.stringValue).joined(separator: ".")
-        return path.isEmpty ? "" : " at \(path)"
     }
 }

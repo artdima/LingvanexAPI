@@ -2,7 +2,7 @@ import Foundation
 
 /// What to translate. The service accepts a single string or an array of them,
 /// and translating a list in one call costs one request instead of N.
-public enum TranslationInput: Equatable, ExpressibleByStringLiteral, ExpressibleByArrayLiteral {
+public enum TranslationInput: Equatable, Sendable, ExpressibleByStringLiteral, ExpressibleByArrayLiteral {
 
     case text(String)
     case batch([String])
@@ -35,7 +35,7 @@ extension TranslationInput: Encodable {
 }
 
 /// The translated counterpart of the input: a string in, a string out; a list in, a list out.
-public enum TranslationOutput: Equatable {
+public enum TranslationOutput: Equatable, Sendable {
 
     case text(String)
     case batch([String])

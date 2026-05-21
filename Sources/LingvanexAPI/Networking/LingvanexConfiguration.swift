@@ -5,7 +5,7 @@ import FoundationNetworking
 #endif
 
 /// Everything the client needs besides the call itself.
-public struct LingvanexConfiguration {
+public struct LingvanexConfiguration: Sendable {
 
     public static var defaultBaseURL: URL {
         guard let url = URL(string: "https://api-b2b.backenster.com/b1/api/v3") else {
@@ -36,10 +36,10 @@ public struct LingvanexConfiguration {
     public var userAgent: String
 
     /// Off unless the host supplies a sink: a library should not decide where logs go.
-    public var logger: ((String) -> Void)?
+    public var logger: (@Sendable (String) -> Void)?
 
     /// Replaces the whole networking stack. Useful for tests and for hosts with their own.
-    public var transport: HTTPTransport?
+    public var transport: (any HTTPTransport)?
 
     public init(
         apiKey: APIKey,
@@ -49,8 +49,8 @@ public struct LingvanexConfiguration {
         waitsForConnectivity: Bool = true,
         retryPolicy: RetryPolicy = .default,
         userAgent: String = LingvanexConfiguration.defaultUserAgent,
-        logger: ((String) -> Void)? = nil,
-        transport: HTTPTransport? = nil
+        logger: (@Sendable (String) -> Void)? = nil,
+        transport: (any HTTPTransport)? = nil
     ) {
         self.apiKey = apiKey
         self.baseURL = baseURL

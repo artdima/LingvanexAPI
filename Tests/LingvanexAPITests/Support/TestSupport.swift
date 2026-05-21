@@ -6,20 +6,50 @@ import Testing
 import FoundationNetworking
 #endif
 
-final class StubTransport: HTTPTransport {
+/// A value behind a lock. The test doubles below are handed to a `Sendable` transport
+/// and read back from the test, so their state genuinely crosses isolation; this is
+/// where `@unchecked Sendable` is earned rather than asserted.
+final class Locked<Value>: @unchecked Sendable {
 
-    struct Stub {
+    private let lock = NSLock()
+    private var value: Value
+
+    init(_ value: Value) {
+        self.value = value
+    }
+
+    var current: Value {
+        lock.lock()
+        defer { lock.unlock() }
+        return value
+    }
+
+    @discardableResult
+    func mutate<Result>(_ body: (inout Value) -> Result) -> Result {
+        lock.lock()
+        defer { lock.unlock() }
+        return body(&value)
+    }
+}
+
+final class StubTransport: HTTPTransport, @unchecked Sendable {
+
+    struct Stub: Sendable {
         var data: Data?
         var statusCode: Int = 200
         var headers: [String: String] = [:]
-        var error: Error?
+        var error: (any Error & Sendable)?
+    }
+
+    private struct State {
+        var index = 0
+        var requests: [URLRequest] = []
     }
 
     private let stubs: [Stub]
-    private var index = 0
+    private let state = Locked(State())
 
-    private(set) var requests: [URLRequest] = []
-
+    var requests: [URLRequest] { state.current.requests }
     var lastRequest: URLRequest? { requests.last }
 
     /// The last stub repeats once the sequence runs out, so a retry test only has to
@@ -36,18 +66,20 @@ final class StubTransport: HTTPTransport {
         self.init(Stub(data: data, statusCode: statusCode, headers: headers))
     }
 
-    convenience init(failure: Error) {
+    convenience init(failure: any Error & Sendable) {
         self.init(Stub(data: nil, statusCode: 0, error: failure))
     }
 
     func send(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
-        requests.append(request)
-
-        let stub = stubs[min(index, stubs.count - 1)]
-        index += 1
+        let stub = state.mutate { state -> Stub in
+            state.requests.append(request)
+            let stub = stubs[min(state.index, stubs.count - 1)]
+            state.index += 1
+            return stub
+        }
 
         if let error = stub.error {
-            throw error is LingvanexError ? error : LingvanexError.transport(underlying: error)
+            throw error as? LingvanexError ?? LingvanexError.transport(underlying: error)
         }
 
         guard let url = request.url,
@@ -79,21 +111,25 @@ struct HangingTransport: HTTPTransport {
 
 /// Returns immediately and records what it was asked to wait for, so backoff can be
 /// asserted without spending real seconds.
-final class RecordingSleeper: RetrySleeper {
+final class RecordingSleeper: RetrySleeper, @unchecked Sendable {
 
-    private(set) var delays: [TimeInterval] = []
+    private let recorded = Locked<[TimeInterval]>([])
+
+    var delays: [TimeInterval] { recorded.current }
 
     func sleep(for duration: TimeInterval) async throws {
-        delays.append(duration)
+        recorded.mutate { $0.append(duration) }
     }
 }
 
-final class LogRecorder {
+final class LogRecorder: @unchecked Sendable {
 
-    private(set) var lines: [String] = []
+    private let recorded = Locked<[String]>([])
+
+    var lines: [String] { recorded.current }
 
     func append(_ line: String) {
-        lines.append(line)
+        recorded.mutate { $0.append(line) }
     }
 }
 
@@ -141,7 +177,7 @@ extension LingvanexError {
 extension LingvanexClient {
 
     static func stubbed(
-        _ transport: HTTPTransport,
+        _ transport: any HTTPTransport,
         apiKey: String = "test-key",
         configure: (inout LingvanexConfiguration) -> Void = { _ in }
     ) -> LingvanexClient {

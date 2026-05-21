@@ -1,10 +1,10 @@
 import Foundation
 
 /// Optional switches on a translation request.
-public struct TranslationOptions: Equatable {
+public struct TranslationOptions: Equatable, Sendable {
 
     /// How the service should treat the input.
-    public enum Mode: String, Equatable {
+    public enum Mode: String, Equatable, Sendable {
         /// Plain text. The default.
         case plain
         /// Markup is preserved instead of being translated along with the text.
