@@ -50,6 +50,9 @@ but is deprecated throughout and will be removed in 2.0. See [MIGRATION.md](MIGR
 - `Accept` and a versioned `User-Agent` on every request.
 - Tests: request shape, decoding, every failure path, retry behaviour on a
   controlled clock, cancellation, and parity between the old and new API.
+- DocC documentation, published from CI: getting started, error handling and the
+  migration from 0.x.
+- `CONTRIBUTING.md`, `SECURITY.md` and issue and pull request templates.
 
 ### Changed
 
