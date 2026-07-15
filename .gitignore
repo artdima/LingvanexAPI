@@ -95,3 +95,6 @@ Secrets.xcconfig
 
 # Files delivered into the working folder by the desktop app
 Claude outputs/
+
+# Delivery archives
+*.zip

@@ -6,7 +6,7 @@ Existing code keeps compiling; the compiler points at every replacement.
 
 The 0.x entry point — the `LingvanexAPI` singleton, `start(with:)` and the two completion
 methods — still exists and forwards to ``LingvanexClient``. Everything is marked deprecated
-with its replacement named, and all of it is removed in 2.0.
+with its replacement named, and all of it is removed in 3.0.
 
 The full mapping of renamed types and properties is in `MIGRATION.md` at the root of the
 repository.

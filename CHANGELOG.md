@@ -4,10 +4,12 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project follows [Semantic Versioning](https://semver.org/).
 
-## [1.0.0] - Unreleased
+## [2.0.0] - Unreleased
 
-The first version with a stable public API. The 0.x entry point still compiles
-but is deprecated throughout and will be removed in 2.0. See [MIGRATION.md](MIGRATION.md).
+The first version with a stable public API. There is no 1.x: nothing was ever
+released under that number, and the major was raised to 2.0 to match the scale of
+the change from 0.1.0. The 0.x entry point still compiles
+but is deprecated throughout and will be removed in 3.0. See [MIGRATION.md](MIGRATION.md).
 
 ### Fixed
 
@@ -76,7 +78,7 @@ but is deprecated throughout and will be removed in 2.0. See [MIGRATION.md](MIGR
 ### Deprecated
 
 - `LingvanexAPI` and its `shared`, `start(with:)`, `translate(_:_:_:_:_:)` and
-  `getLanguages(_:_:_:)`. They forward to `LingvanexClient` and are removed in 2.0.
+  `getLanguages(_:_:_:)`. They forward to `LingvanexClient` and are removed in 3.0.
 
 ### Security
 

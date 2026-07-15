@@ -32,7 +32,7 @@ secret scan.
 | `Sources/LingvanexAPI/Models/` | request and response types, no behaviour |
 | `Sources/LingvanexAPI/Networking/` | transport, endpoint, request building, validation, retries |
 | `Sources/LingvanexAPI/Errors/` | `LingvanexError` and what it tells a user |
-| `Sources/LingvanexAPI/Compatibility/` | the deprecated 0.x surface, removed in 2.0 |
+| `Sources/LingvanexAPI/Compatibility/` | the deprecated 0.x surface, removed in 3.0 |
 | `Tests/LingvanexAPITests/` | tests, fixtures and the doubles they share |
 
 Dependencies point one way: the client knows the networking layer, the networking layer

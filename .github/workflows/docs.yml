@@ -1,0 +1,49 @@
+name: Documentation
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      # LINGVANEX_BUILD_DOCS pulls in swift-docc-plugin. It is guarded so that
+      # consumers of the package never resolve a dependency they do not need.
+      - name: Build documentation
+        env:
+          LINGVANEX_BUILD_DOCS: "1"
+        run: |
+          swift package --allow-writing-to-directory docs \
+            generate-documentation \
+            --target LingvanexAPI \
+            --disable-indexing \
+            --transform-for-static-hosting \
+            --hosting-base-path LingvanexAPI \
+            --output-path docs
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

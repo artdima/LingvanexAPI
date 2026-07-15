@@ -28,14 +28,14 @@ text translation and the list of supported languages.
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/artdima/LingvanexAPI.git", from: "1.0.0")
+    .package(url: "https://github.com/artdima/LingvanexAPI.git", from: "2.0.0")
 ]
 ```
 
 **CocoaPods**
 
 ```ruby
-pod 'LingvanexAPI', '~> 1.0'
+pod 'LingvanexAPI', '~> 2.0'
 ```
 
 ## Getting started
@@ -188,7 +188,7 @@ let client = LingvanexClient(configuration: configuration)
 
 Existing code keeps compiling: the old `LingvanexAPI` singleton and its completion
 handlers forward to the new client and are deprecated with their replacements named.
-They are removed in 2.0. See [MIGRATION.md](MIGRATION.md) for the mapping, and
+They are removed in 3.0. See [MIGRATION.md](MIGRATION.md) for the mapping, and
 [CHANGELOG.md](CHANGELOG.md) for what changed and why.
 
 Two behaviours could not be preserved, and both are bug fixes: a failure now arrives as a

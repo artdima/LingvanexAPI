@@ -19,7 +19,7 @@ import Foundation
 /// that used it from the main thread — which is what the completion handlers assumed —
 /// are unaffected, and their completions now arrive on the main actor by construction.
 ///
-/// This type is removed in 2.0.
+/// This type is removed in 3.0.
 @MainActor
 public final class LingvanexAPI {
 

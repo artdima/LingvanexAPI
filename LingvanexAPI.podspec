@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name         = "LingvanexAPI"
-  s.version      = "1.0.0"
+  s.version      = "2.0.0"
   s.summary      = "Swift client for the Lingvanex Translation API."
   s.description  = <<-DESC
                    A Swift client for the Lingvanex Translation API: text

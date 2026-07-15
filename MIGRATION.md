@@ -1,8 +1,8 @@
-# Migrating from 0.x to 1.0
+# Migrating from 0.x to 2.0
 
 Existing code keeps compiling. Every 0.x entry point is still there, forwards to
 the new client, and is marked deprecated so the compiler points at the replacement.
-They are removed in 2.0.
+They are removed in 3.0.
 
 Two behaviours changed in ways no wrapper can hide, and both are bug fixes:
 
@@ -115,7 +115,7 @@ when the input changes or the view disappears:
 
 ## Renamed types and properties
 
-| 0.x | 1.0 |
+| 0.x | 2.0 |
 | --- | --- |
 | `LingvanexAPI.Translate` | `Translation` |
 | `LingvanexAPI.Languages` | `Language` |

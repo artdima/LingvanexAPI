@@ -26,4 +26,4 @@ it is wrapped in.
 
 The demo application in versions up to 0.1.0 contained a hardcoded Lingvanex API key, and
 that key is present in the commit history. It must be treated as compromised: if you
-cloned the repository before 1.0.0, do not reuse the key you will find there.
+cloned the repository before 2.0.0, do not reuse the key you will find there.

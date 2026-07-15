@@ -75,7 +75,7 @@ public struct LingvanexConfiguration: Sendable {
 public enum LingvanexAPIVersion {
 
     /// Kept in step with the podspec and the release tag.
-    public static let current = "1.0.0"
+    public static let current = "2.0.0"
 
     static var platform: String {
         #if os(iOS)

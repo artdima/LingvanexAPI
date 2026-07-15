@@ -19,8 +19,14 @@ jobs:
         os: [macos-15, ubuntu-24.04]
     steps:
       - uses: actions/checkout@v4
-      - name: Build
-        run: swift build --build-tests
+
+      # The library must build clean. The flag is deliberately not applied to the
+      # test target: the compatibility suite calls the deprecated 0.x API on purpose,
+      # and Swift Testing refuses @Test on a declaration marked deprecated, so those
+      # warnings cannot be silenced at the source.
+      - name: Build the library with warnings as errors
+        run: swift build -Xswiftc -warnings-as-errors
+
       - name: Test
         run: swift test
 
@@ -43,6 +49,20 @@ jobs:
             -scheme LingvanexAPI \
             -destination "${{ matrix.destination.value }}" \
             | xcbeautify
+
+  coverage:
+    name: Coverage
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: swift test --enable-code-coverage
+      - name: Report
+        run: |
+          BIN=$(swift build --show-bin-path)
+          xcrun llvm-cov report \
+            "$BIN/LingvanexAPIPackageTests.xctest/Contents/MacOS/LingvanexAPIPackageTests" \
+            -instr-profile "$BIN/codecov/default.profdata" \
+            -ignore-filename-regex="Tests/"
 
   lint:
     name: SwiftLint
