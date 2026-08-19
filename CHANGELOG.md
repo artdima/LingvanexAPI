@@ -83,7 +83,7 @@ but is deprecated throughout and will be removed in 3.0. See [MIGRATION.md](MIGR
 ### Security
 
 - The demo application no longer contains an API key. The key it used to carry was
-  committed to the public history and must be treated as compromised.
+  committed to the public history and has been revoked.
 
 ## [0.1.0] - 2021-02-08
 
