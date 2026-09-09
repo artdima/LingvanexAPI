@@ -4,7 +4,7 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project follows [Semantic Versioning](https://semver.org/).
 
-## [2.0.0] - Unreleased
+## [2.0.0] - 2026-09-09
 
 The first version with a stable public API. There is no 1.x: nothing was ever
 released under that number, and the major was raised to 2.0 to match the scale of
