@@ -8,12 +8,15 @@
     <img src="https://img.shields.io/badge/platforms-iOS%20%7C%20macOS%20%7C%20tvOS%20%7C%20watchOS%20%7C%20visionOS%20%7C%20Linux-lightgrey.svg" alt="Platforms">
     <a href="https://cocoapods.org/pods/LingvanexAPI"><img src="https://img.shields.io/cocoapods/v/LingvanexAPI.svg" alt="CocoaPods"></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT"></a>
+    <a href="https://artdima.github.io/LingvanexAPI/documentation/lingvanexapi/"><img src="https://img.shields.io/badge/docs-DocC-blue.svg" alt="Documentation"></a>
 </p>
 
 # LingvanexAPI
 
 A Swift client for the [Lingvanex Translation API](https://lingvanex.com/documentation-api/):
 text translation and the list of supported languages.
+
+Full API reference: [artdima.github.io/LingvanexAPI](https://artdima.github.io/LingvanexAPI/documentation/lingvanexapi/).
 
 - `async`/`await`, with cancellation reaching the request
 - typed errors that say what went wrong and what to do about it

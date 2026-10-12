@@ -34,6 +34,24 @@ jobs:
             --hosting-base-path LingvanexAPI \
             --output-path docs
 
+      # DocC renders a blank page at the site root; the module page is the real entry.
+      - name: Redirect the site root to the module page
+        run: |
+          cat > docs/index.html <<'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <meta http-equiv="refresh" content="0; url=documentation/lingvanexapi/">
+            <link rel="canonical" href="https://artdima.github.io/LingvanexAPI/documentation/lingvanexapi/">
+            <title>LingvanexAPI</title>
+          </head>
+          <body>
+            <a href="documentation/lingvanexapi/">LingvanexAPI documentation</a>
+          </body>
+          </html>
+          EOF
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: docs
@@ -43,7 +61,7 @@ jobs:
     runs-on: ubuntu-24.04
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url }}documentation/lingvanexapi/
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
